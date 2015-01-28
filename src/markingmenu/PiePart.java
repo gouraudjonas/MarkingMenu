@@ -10,47 +10,40 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
-import java.awt.geom.Line2D;
+import java.awt.geom.Arc2D;
+import java.awt.geom.Area;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
-import java.util.Vector;
 import javax.swing.JComponent;
 
 /**
- *
- * @author sacapuce
+ * PiePart which can be used to create a marking menu
+ * 
+ * @author Jonas Gouraud
  */
-public class Biscuit extends JComponent {
+public class PiePart extends JComponent {
 
     private Point centerPoint;
-    public float startAngle;
-    public float endAngle;
-    public float startRadius;
-    public float endRadius;
+    private float startAngle;
+    private float endAngle;
+    private float startRadius;
+    private float endRadius;
     private String text;
     private Color color;
     private Color colorHighlight;
-    private boolean stateReleased;
+    private boolean stateReleased = false;
 
-    private final PropertyChangeSupport support;
+    private final PropertyChangeSupport support = new PropertyChangeSupport(this);
 
-    private static final Color DEFAULT_COLOR = Color.LIGHT_GRAY;
+    private static final Color DEFAULT_COLOR = Color.GREEN;
     private static final Color DEFAULT_COLORHIGHLIGHT = Color.RED;
 
-    public static final String PROP_CENTERPOINT = "centerPoint";
-    public static final String PROP_STARTANGLE = "startAngle";
-    public static final String PROP_ENDANGLE = "endAngle";
-    public static final String PROP_STARTRADIUS = "startRadius";
-    public static final String PROP_ENDRADIUS = "endRadius";
-    public static final String PROP_TEXT = "text";
-    public static final String PROP_COLOR = "color";
-    public static final String PROP_COLORHIGHLIGHT = "colorHighlight";
     public static final String PROP_STATERELEASED = "stateReleased";
 
     /**
      * Obligatory empty constructor
      */
-    public Biscuit() {
+    public PiePart() {
         this("text");
     }
 
@@ -59,14 +52,12 @@ public class Biscuit extends JComponent {
      *
      * @param text
      */
-    public Biscuit(String text) {
-        this(new Point(0, 0), 0, 90, 1, 10, text, DEFAULT_COLOR,
-                DEFAULT_COLORHIGHLIGHT, false);
+    public PiePart(String text) {
+        this(new Point(0, 0), 0, 90, 5, 50, text);
     }
 
     /**
-     * Constructor with general information (which won't without dynamic
-     * changes)
+     * Constructor with general information
      *
      * @param text
      * @param startAngle
@@ -74,10 +65,10 @@ public class Biscuit extends JComponent {
      * @param startRadius
      * @param endRadius
      */
-    public Biscuit(String text, float startAngle, float endAngle,
-            float startRadius, float endRadius) {
-        this(new Point(0, 0), startAngle, endAngle, startRadius, endRadius,
-                text, DEFAULT_COLOR, DEFAULT_COLORHIGHLIGHT, false);
+    public PiePart(Point p, float startAngle, float endAngle,
+            float startRadius, float endRadius, String text) {
+        this(p, startAngle, endAngle, startRadius, endRadius,
+                text, DEFAULT_COLOR, DEFAULT_COLORHIGHLIGHT);
     }
 
     /**
@@ -91,11 +82,9 @@ public class Biscuit extends JComponent {
      * @param text
      * @param color
      * @param colorHighlight
-     * @param stateRealeased
      */
-    public Biscuit(Point p, float startAngle, float endAngle, float startRadius,
-            float endRadius, String text, Color color, Color colorHighlight,
-            boolean stateRealeased) {
+    public PiePart(Point p, float startAngle, float endAngle, float startRadius,
+            float endRadius, String text, Color color, Color colorHighlight) {
         setCenterPoint(p);
         setStartAngle(startAngle);
         setEndAngle(endAngle);
@@ -104,14 +93,28 @@ public class Biscuit extends JComponent {
         setText(text);
         setColor(color);
         setColorHighlight(colorHighlight);
-        setStateReleased(stateReleased);
-        support = new PropertyChangeSupport(this);
     }
 
-    @Override
-    public void setBounds(int x, int y, int width, int height) {
-        super.setBounds(x, y, width, height);
-        //scale = Math.min(width, height) / DEFAULT_SIZE;
+    /**
+     * Create the area according to PiePart caracteristics
+     * 
+     * @return area
+     */
+    private Area createArea() {
+        Area startingArea = new Area();
+        Arc2D bigArc = new Arc2D.Float((float) centerPoint.getX(),
+                (float) centerPoint.getY(), endRadius * 2,
+                endRadius * 2, startAngle, endAngle - startAngle, Arc2D.PIE);
+        Arc2D smallArc = new Arc2D.Float(
+                (float) centerPoint.getX() + endRadius - startRadius,
+                (float) centerPoint.getY() + endRadius - startRadius,
+                startRadius * 2, startRadius * 2, startAngle,
+                endAngle - startAngle, Arc2D.PIE);
+
+        startingArea.add(new Area(bigArc));
+        startingArea.subtract(new Area(smallArc));
+
+        return startingArea;
     }
 
     @Override
@@ -123,52 +126,39 @@ public class Biscuit extends JComponent {
 
         // Paint the whole arc
         g2d.setColor(this.getColor());
-        g2d.fillArc((int) centerPoint.getX(), (int) centerPoint.getY(),
-                (int) (endRadius * Math.sin(startAngle)),
-                (int) (endRadius * Math.cos(endAngle)),
-                (int) startAngle, (int) (endAngle - startAngle));
-
-        // Repaint the little arc to give the illusion that there is nothing
-        // between 0 and startRadius (he he)
+        g2d.fill(createArea());
         g2d.setColor(oldColor);
-        g2d.fillArc((int) centerPoint.getX(), (int) centerPoint.getY(),
-                (int) (startRadius * Math.sin(startAngle)),
-                (int) (startRadius * Math.cos(endAngle)),
-                (int) startAngle, (int) (endAngle - startAngle));
+
+        /*System.out.println("DEBUG > paint caracteristics : width = "
+                + area.getBounds().height + " - height = "
+                + area.getBounds().width + " at " + area.getBounds().x + ";"
+                + area.getBounds().y);
+                
+        System.out.println("DEBUG > paint caracteristics : centerPoint("
+                + centerPoint.getX() + ";" + centerPoint.getY()
+                + ") - startAngle = " + startAngle + " - endAngle = "
+                + endAngle + " - startRadius = " + startRadius
+                + " - endRadius = " + endRadius);*/
     }
 
     @Override
     public boolean contains(Point p) {
-        Point startPoint = new Point(pointByPolar(startAngle, endRadius));
-        Point endPoint = new Point(pointByPolar(endAngle, endRadius));
-        float angleStartPoint = getAngle(centerPoint, startPoint);
-        float angleEndPoint = getAngle(centerPoint, endPoint);
-        float angleMousePoint = getAngle(centerPoint, p);
-        
-        if(angleMousePoint >= angleStartPoint && angleMousePoint <= angleEndPoint){
-            float mouseDistance =
-                    (float) Math.sqrt(Math.pow(p.getX(), 2) +Math.pow(p.getY(), 2));
-            if (mouseDistance >= startRadius && mouseDistance <= endRadius){
-                return true;
-            }
-        }
-
-        return false;
+        return createArea().contains(p);
     }
 
     @Override
     public boolean contains(int x, int y) {
-        return contains(new Point(x, y));
+        return createArea().contains(new Point(x, y));
     }
 
-    private float getAngle(Point p1, Point p2) {
+    /*private float getAngle(Point p1, Point p2) {
         int mouseX = p2.x - p1.x;
         int mouseY = p2.y - p1.y;
         double l = Math.sqrt(mouseX * mouseX + mouseY * mouseY);
         double lx = mouseX / l;
         double ly = mouseY / l;
         double theta;
-        
+
         if (lx > 0) {
             theta = Math.atan(ly / lx);
         } else if (lx < 0) {
@@ -190,12 +180,12 @@ public class Biscuit extends JComponent {
 
     public Point pointByPolar(float angle, float distance) {
         Point newPoint = centerPoint;
-        
+
         newPoint.x += distance * Math.cos(angle);
         newPoint.y += distance * Math.sin(angle);
-        
+
         return newPoint;
-    }
+    }*/
 
     /**
      * ********* PROPERTY CHANGE LISTENER **************
@@ -232,30 +222,16 @@ public class Biscuit extends JComponent {
         return centerPoint;
     }
 
-    public void privateSetCenterPoint(Point centerPoint) {
-        this.centerPoint = centerPoint;
-    }
-
     public void setCenterPoint(Point centerPoint) {
-        Point oldCenterPoint = getCenterPoint();
-        privateSetCenterPoint(centerPoint);
-        repaint();
-        support.firePropertyChange(PROP_CENTERPOINT, oldCenterPoint, getCenterPoint());
+        this.centerPoint = centerPoint;
     }
 
     public float getStartAngle() {
         return startAngle;
     }
 
-    public void privateSetStartAngle(float startAngle) {
-        this.startAngle = startAngle;
-    }
-
     public void setStartAngle(float startAngle) {
-        float oldStartAngle = getStartAngle();
-        privateSetStartAngle(startAngle);
-        repaint();
-        support.firePropertyChange(PROP_STARTANGLE, oldStartAngle, getStartAngle());
+        this.startAngle = startAngle;
     }
 
     public float getEndAngle() {
@@ -310,13 +286,13 @@ public class Biscuit extends JComponent {
         return stateReleased;
     }
 
-    public void privateSetStateReleased(boolean stateReleased) {
+    private void privateSetStateReleased(boolean stateReleased) {
         this.stateReleased = stateReleased;
     }
 
     public void setStateReleased(boolean stateReleased) {
         boolean oldStateRealeased = isStateReleased();
-        privateSetCenterPoint(centerPoint);
+        privateSetStateReleased(stateReleased);
         repaint();
         support.firePropertyChange(PROP_STATERELEASED, oldStateRealeased, isStateReleased());
     }
