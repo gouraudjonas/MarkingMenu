@@ -10,6 +10,8 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Area;
 import java.beans.PropertyChangeListener;
@@ -18,27 +20,24 @@ import javax.swing.JComponent;
 
 /**
  * PiePart which can be used to create a marking menu
- * 
+ *
  * @author Jonas Gouraud
  */
-public class PiePart extends JComponent {
+public class PiePart extends JComponent implements MouseListener {
 
     private Point centerPoint;
     private float startAngle;
-    private float endAngle;
+    private float extendAngle;
     private float startRadius;
     private float endRadius;
     private String text;
     private Color color;
-    private Color colorHighlight;
-    private boolean stateReleased = false;
+    private Area area;
 
     private final PropertyChangeSupport support = new PropertyChangeSupport(this);
 
-    private static final Color DEFAULT_COLOR = Color.GREEN;
-    private static final Color DEFAULT_COLORHIGHLIGHT = Color.RED;
-
-    public static final String PROP_STATERELEASED = "stateReleased";
+    private Color originalColor;
+    private Color originalHighlightColor;
 
     /**
      * Obligatory empty constructor
@@ -53,22 +52,22 @@ public class PiePart extends JComponent {
      * @param text
      */
     public PiePart(String text) {
-        this(new Point(0, 0), 0, 90, 5, 50, text);
+        this(new Point(0, 0), 0, 90, 10, 100, text);
     }
 
     /**
      * Constructor with general information
      *
+     * @param p
      * @param text
      * @param startAngle
-     * @param endAngle
+     * @param extendAngle
      * @param startRadius
      * @param endRadius
      */
-    public PiePart(Point p, float startAngle, float endAngle,
+    public PiePart(Point p, float startAngle, float extendAngle,
             float startRadius, float endRadius, String text) {
-        this(p, startAngle, endAngle, startRadius, endRadius,
-                text, DEFAULT_COLOR, DEFAULT_COLORHIGHLIGHT);
+        this(p, startAngle, extendAngle, startRadius, endRadius, text, Color.GREEN, Color.RED);
     }
 
     /**
@@ -76,40 +75,45 @@ public class PiePart extends JComponent {
      *
      * @param p centerPoint
      * @param startAngle
-     * @param endAngle
+     * @param extendAngle
      * @param startRadius
      * @param endRadius
      * @param text
      * @param color
      * @param colorHighlight
      */
-    public PiePart(Point p, float startAngle, float endAngle, float startRadius,
+    public PiePart(Point p, float startAngle, float extendAngle, float startRadius,
             float endRadius, String text, Color color, Color colorHighlight) {
         setCenterPoint(p);
         setStartAngle(startAngle);
-        setEndAngle(endAngle);
+        setExtendAngle(extendAngle);
         setStartRadius(startRadius);
         setEndRadius(endRadius);
         setText(text);
-        setColor(color);
-        setColorHighlight(colorHighlight);
+        setOriginalColor(color);
+        setOriginalHighlightColor(colorHighlight);
+
+        setColor(this.getOriginalColor());
+        addMouseListener(this);
+        area = createArea();
     }
 
     /**
-     * Create the area according to PiePart caracteristics
-     * 
+     * Create the area according to PiePart caracteristics : a big arc, then
+     * substracting a small arc around center
+     *
      * @return area
      */
     private Area createArea() {
         Area startingArea = new Area();
         Arc2D bigArc = new Arc2D.Float((float) centerPoint.getX(),
                 (float) centerPoint.getY(), endRadius * 2,
-                endRadius * 2, startAngle, endAngle - startAngle, Arc2D.PIE);
+                endRadius * 2, startAngle, extendAngle, Arc2D.PIE);
         Arc2D smallArc = new Arc2D.Float(
                 (float) centerPoint.getX() + endRadius - startRadius,
                 (float) centerPoint.getY() + endRadius - startRadius,
                 startRadius * 2, startRadius * 2, startAngle,
-                endAngle - startAngle, Arc2D.PIE);
+                extendAngle, Arc2D.PIE);
 
         startingArea.add(new Area(bigArc));
         startingArea.subtract(new Area(smallArc));
@@ -126,66 +130,35 @@ public class PiePart extends JComponent {
 
         // Paint the whole arc
         g2d.setColor(this.getColor());
-        g2d.fill(createArea());
+        g2d.fill(getArea());
+        g2d.setColor(Color.BLACK);
+        g2d.draw(getArea());
         g2d.setColor(oldColor);
-
-        /*System.out.println("DEBUG > paint caracteristics : width = "
-                + area.getBounds().height + " - height = "
-                + area.getBounds().width + " at " + area.getBounds().x + ";"
-                + area.getBounds().y);
-                
-        System.out.println("DEBUG > paint caracteristics : centerPoint("
-                + centerPoint.getX() + ";" + centerPoint.getY()
-                + ") - startAngle = " + startAngle + " - endAngle = "
-                + endAngle + " - startRadius = " + startRadius
-                + " - endRadius = " + endRadius);*/
     }
 
     @Override
     public boolean contains(Point p) {
-        return createArea().contains(p);
+        return getArea().contains(p);
     }
 
     @Override
     public boolean contains(int x, int y) {
-        return createArea().contains(new Point(x, y));
+        return getArea().contains(new Point(x, y));
     }
 
-    /*private float getAngle(Point p1, Point p2) {
-        int mouseX = p2.x - p1.x;
-        int mouseY = p2.y - p1.y;
-        double l = Math.sqrt(mouseX * mouseX + mouseY * mouseY);
-        double lx = mouseX / l;
-        double ly = mouseY / l;
-        double theta;
-
-        if (lx > 0) {
-            theta = Math.atan(ly / lx);
-        } else if (lx < 0) {
-            theta = -1 * Math.atan(ly / lx);
-        } else {
-            theta = 0;
-        }
-
-        if ((mouseX > 0) && (mouseY < 0)) {
-            theta = -1 * theta;
-        } else if (mouseX < 0) {
-            theta += Math.PI;
-        } else {
-            theta = 2 * Math.PI - theta;
-        }
-
-        return (float) (theta / (2 * Math.PI));
+    /**
+     * Used before showing this PiePart, to update it with the current mouse
+     * position
+     *
+     * @param centerPointX
+     * @param centerPointY
+     */
+    public void updatePosition(int centerPointX, int centerPointY) {
+        // Update of centerPoint and the area
+        this.setCenterPoint(new Point(centerPointX - 8 - (int) this.getEndRadius(),
+                centerPointY - 30 - (int) this.getEndRadius()));
+        area = createArea();
     }
-
-    public Point pointByPolar(float angle, float distance) {
-        Point newPoint = centerPoint;
-
-        newPoint.x += distance * Math.cos(angle);
-        newPoint.y += distance * Math.sin(angle);
-
-        return newPoint;
-    }*/
 
     /**
      * ********* PROPERTY CHANGE LISTENER **************
@@ -234,12 +207,12 @@ public class PiePart extends JComponent {
         this.startAngle = startAngle;
     }
 
-    public float getEndAngle() {
-        return endAngle;
+    public float getExtendAngle() {
+        return extendAngle;
     }
 
-    public void setEndAngle(float endAngle) {
-        this.endAngle = endAngle;
+    public void setExtendAngle(float extendAngle) {
+        this.extendAngle = extendAngle;
     }
 
     public float getStartRadius() {
@@ -274,26 +247,54 @@ public class PiePart extends JComponent {
         this.color = color;
     }
 
-    public Color getColorHighlight() {
-        return colorHighlight;
+    public Color getOriginalColor() {
+        return originalColor;
     }
 
-    public void setColorHighlight(Color colorHighlight) {
-        this.colorHighlight = colorHighlight;
+    public void setOriginalColor(Color originalColor) {
+        this.originalColor = originalColor;
     }
 
-    public boolean isStateReleased() {
-        return stateReleased;
+    public Color getOriginalHighlightColor() {
+        return originalHighlightColor;
     }
 
-    private void privateSetStateReleased(boolean stateReleased) {
-        this.stateReleased = stateReleased;
+    public void setOriginalHighlightColor(Color originalHighlightColor) {
+        this.originalHighlightColor = originalHighlightColor;
     }
 
-    public void setStateReleased(boolean stateReleased) {
-        boolean oldStateRealeased = isStateReleased();
-        privateSetStateReleased(stateReleased);
+    public Area getArea() {
+        return area;
+    }
+
+    public void setArea(Area area) {
+        this.area = area;
+    }
+
+    /**
+     * *************** MOUSE LISTENING **********************
+     */
+    @Override
+    public void mouseClicked(MouseEvent e) {
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+    }
+
+    @Override
+    public void mouseEntered(MouseEvent e) {
+        setColor(this.getOriginalHighlightColor());
         repaint();
-        support.firePropertyChange(PROP_STATERELEASED, oldStateRealeased, isStateReleased());
+    }
+
+    @Override
+    public void mouseExited(MouseEvent e) {
+        setColor(this.getOriginalColor());
+        repaint();
     }
 }
