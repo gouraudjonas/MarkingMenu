@@ -55,7 +55,7 @@ public class MarkMenu extends JPanel {
     }   
     
     private void displayMenu() {
-        if (myPieParts.size() >= 1) return;
+        if (myPieParts.size() < 1) return;
         Point mousePosition = MouseInfo.getPointerInfo().getLocation();
         
         int i = 0;
@@ -96,9 +96,13 @@ public class MarkMenu extends JPanel {
         myPieParts.add(new PiePart(label));
     }
     
-    protected void paintComponent(Graphics g) {        
+    protected void paintComponent(Graphics g) { 
+        System.out.println("Painting...");
         if (isMenuVisible) {
-            this.myPieParts.forEach((PiePart) -> setVisible(true));
+            for (PiePart p : myPieParts) {
+                p.setVisible(true);
+                p.paint(g);
+            }
         }
     }
         
@@ -251,9 +255,6 @@ public class MarkMenu extends JPanel {
         }
         @Override
         public void run() {
-            timerOut();
-        }
-        protected void timerOut() {
             System.out.println("time out");
             switch(getState()) {
                 case IDLE:
