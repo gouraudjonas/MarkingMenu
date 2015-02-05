@@ -130,7 +130,7 @@ public class PanelMarkingMenu extends JPanel {
 
         if (MENU_ITEMS != 0) {
             for (int i = 1; i <= MENU_ITEMS; i++) {
-                items[i] = new PiePart(step * (i - 1), step * i);
+                //items[i] = new PiePart(step * (i - 1), step * i);
             }
         }
 
