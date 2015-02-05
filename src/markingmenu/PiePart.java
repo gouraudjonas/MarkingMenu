@@ -24,10 +24,13 @@ import javax.swing.JComponent;
  * @author Jonas Gouraud
  */
 public class PiePart extends JComponent implements MouseListener {
-
+    
+    public static final float START_RADIUS = 10.0f;
+    public static final float END_RADIUS = 100.0f;
+            
     private Point centerPoint;
-    private float startAngle;
-    private float extendAngle;
+    private float startAngle;   // in degree
+    private float extendAngle;  // in degree
     private float startRadius;
     private float endRadius;
     private String text;
@@ -52,7 +55,7 @@ public class PiePart extends JComponent implements MouseListener {
      * @param text
      */
     public PiePart(String text) {
-        this(new Point(0, 0), 0, 90, 10, 100, text);
+        this(new Point(0, 0), 0, 90, START_RADIUS, END_RADIUS, text);
     }
 
     /**
