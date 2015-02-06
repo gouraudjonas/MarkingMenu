@@ -43,8 +43,7 @@ public class MarkMenu extends JPanel {
     private MarkMenuState state;
     private List<PiePart> myPieParts;
     private Point menuCenter = new Point(0, 0);
-    private boolean isMenuVisible = false;
-
+    private boolean isMenuVisible = false;    
     private Timer timer;
     
     public MarkMenu() {
@@ -55,16 +54,24 @@ public class MarkMenu extends JPanel {
         addMouseMotionListener(mma);
     }   
     
-    private void displayMenu() {
-        if (myPieParts.size() < 1) return;
-        Point mousePosition = MouseInfo.getPointerInfo().getLocation();
-        this.setLayout(new javax.swing.OverlayLayout(new Panel()));
+    private void updateAngles() {
         int i = 0;
         int nbOfPieParts = this.myPieParts.size();
+        
         for (PiePart p: myPieParts) {
-            p.updatePosition(mousePosition.x, mousePosition.y);
-            p.setStartAngle(i*nbOfPieParts);
-            p.setExtendAngle((i+1)*nbOfPieParts);
+            p.setStartAngle( (360/nbOfPieParts) *i);
+            p.setExtendAngle( 360/nbOfPieParts);
+            i++;
+        }
+    }
+    
+    private void displayMenu(Point pointer) {
+        if (myPieParts.size() < 1) return;
+        this.setLayout(new javax.swing.OverlayLayout(this));
+        int i = 0;
+        for (PiePart p: myPieParts) {
+            p.updatePosition(pointer.x, pointer.y);
+            this.add(p);
             i++;
         }
         isMenuVisible = true;       
@@ -93,20 +100,16 @@ public class MarkMenu extends JPanel {
     }
     
     public void  addItem(String label, Callable func) {
-        // TODO: item needs to know what to execute
-        PiePart part = new PiePart(label);
+        PiePart part = new PiePart(label, func);
         part.setVisible(false);
         myPieParts.add(part);
-        
+        updateAngles();        
     }
     
     protected void paintComponent(Graphics g) { 
-        System.out.println("Painting...");
-        if (isMenuVisible) {
-            for (PiePart p : myPieParts) {
-                p.setVisible(true);
-                p.paint(g);
-            }
+        for (PiePart p : myPieParts) {
+            p.paint(g);
+            p.setVisible(isMenuVisible);
         }
     }
         
@@ -151,7 +154,7 @@ public class MarkMenu extends JPanel {
                 switch(getState()) {
                     case IDLE:
                         timer = new Timer();
-                        timer.schedule(new MarkingMenuTimer(), DELAY);
+                        timer.schedule(new MarkingMenuTimer(e.getPoint()), DELAY);
                         setState(MarkMenuState.MARKING);
                         break;
                     case MARKING:
@@ -203,7 +206,7 @@ public class MarkMenu extends JPanel {
                         break;
                     case MARKING:
                         timer.cancel();
-                        displayMenu();
+                        displayMenu(e.getPoint());
                         // Execute item if one selected
                         setState(MarkMenuState.MENU);
                         break;
@@ -232,7 +235,7 @@ public class MarkMenu extends JPanel {
                         // Impossible
                         break;
                     case MARKING:
-                        timer.cancel();
+                        //timer.cancel();
                         setState(MarkMenuState.INVISIBLE);
                         break;
                     case MENU:
@@ -255,7 +258,10 @@ public class MarkMenu extends JPanel {
      * Timer manager for MarkMenu
      */
     private class MarkingMenuTimer extends TimerTask {
-        MarkingMenuTimer() {
+        private Point initialPointer;
+        MarkingMenuTimer() {}
+        MarkingMenuTimer(Point p) {
+            initialPointer = p;
         }
         @Override
         public void run() {
@@ -266,7 +272,7 @@ public class MarkMenu extends JPanel {
                     break;
                 case MARKING:
                      // should fire visibility
-                    displayMenu();
+                    displayMenu(initialPointer);
                     setState(MarkMenuState.VISIBLE);
                     break;
                 case MENU:
@@ -307,6 +313,10 @@ public class MarkMenu extends JPanel {
         mm.addItem("One");
         mm.addItem("Two");
         mm.addItem("Three");
+        mm.addItem("Four");
+        mm.addItem("Five");
+        mm.addItem("Six");
+        mm.addItem("Seven");
         JFrame frame = new JFrame("MarkMenu Testing");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setContentPane(mm);
