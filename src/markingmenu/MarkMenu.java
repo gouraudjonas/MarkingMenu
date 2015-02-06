@@ -9,6 +9,7 @@ import java.awt.Cursor;
 import java.awt.Graphics;
 import java.awt.Menu;
 import java.awt.MouseInfo;
+import java.awt.Panel;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -57,11 +58,11 @@ public class MarkMenu extends JPanel {
     private void displayMenu() {
         if (myPieParts.size() < 1) return;
         Point mousePosition = MouseInfo.getPointerInfo().getLocation();
-        
+        this.setLayout(new javax.swing.OverlayLayout(new Panel()));
         int i = 0;
         int nbOfPieParts = this.myPieParts.size();
         for (PiePart p: myPieParts) {
-            p.setCenterPoint(mousePosition);
+            p.updatePosition(mousePosition.x, mousePosition.y);
             p.setStartAngle(i*nbOfPieParts);
             p.setExtendAngle((i+1)*nbOfPieParts);
             i++;
@@ -93,7 +94,10 @@ public class MarkMenu extends JPanel {
     
     public void  addItem(String label, Callable func) {
         // TODO: item needs to know what to execute
-        myPieParts.add(new PiePart(label));
+        PiePart part = new PiePart(label);
+        part.setVisible(false);
+        myPieParts.add(part);
+        
     }
     
     protected void paintComponent(Graphics g) { 
