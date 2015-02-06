@@ -8,6 +8,7 @@ package markingmenu;
 import markingmenu.*;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -24,8 +25,8 @@ import javax.swing.JComponent;
  *
  * @author Jonas Gouraud
  */
-public class PiePart extends JComponent implements MouseListener {        
-            
+public class PiePart extends JComponent implements MouseListener {
+
     private Point centerPoint;
     private float startAngle;
     private float extendAngle;
@@ -75,7 +76,7 @@ public class PiePart extends JComponent implements MouseListener {
      */
     public PiePart(Point p, float startAngle, float extendAngle,
             float startRadius, float endRadius, String text, Callable func) {
-        this(p, startAngle, extendAngle, startRadius, endRadius, text, new Color(0x04819E),new Color(0xFF7F00), func);
+        this(p, startAngle, extendAngle, startRadius, endRadius, text, new Color(0x04819E), new Color(0xFF7F00), func);
     }
 
     /**
@@ -135,6 +136,7 @@ public class PiePart extends JComponent implements MouseListener {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
 
+        Font oldFont = g2d.getFont();
         Color oldColor = g2d.getColor();
 
         // Paint the whole arc
@@ -142,7 +144,23 @@ public class PiePart extends JComponent implements MouseListener {
         g2d.fill(getArea());
         g2d.setColor(Color.BLACK);
         g2d.draw(getArea());
+
+        // Paint the text
+        g2d.setColor(Color.BLACK);
+        g2d.setFont(new Font("TimesRoman", Font.PLAIN, 20));
+        int xString = (int) (centerPoint.x + endRadius +
+                Math.cos(degreeToRadian(startAngle + extendAngle / 2)) * endRadius / 2);
+        int yString = (int) (centerPoint.y + endRadius -
+                Math.sin(degreeToRadian(startAngle + extendAngle / 2)) * endRadius / 2);
+        g2d.drawString(this.getText(), xString, yString);
+
+        // Get back to the old color
         g2d.setColor(oldColor);
+        g2d.setFont(oldFont);
+    }
+
+    private double degreeToRadian(double degree) {
+        return degree * 2 * Math.PI / 360;
     }
 
     @Override
@@ -278,8 +296,8 @@ public class PiePart extends JComponent implements MouseListener {
 
     public void setArea(Area area) {
         this.area = area;
-    }    
-    
+    }
+
     private void setAction(Callable func) {
         this.action = func;
     }

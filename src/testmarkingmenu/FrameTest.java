@@ -37,10 +37,10 @@ public class FrameTest extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        piePart1 = new testmarkingmenu.PiePart();
-        piePart2 = new testmarkingmenu.PiePart();
-        piePart3 = new testmarkingmenu.PiePart();
-        piePart4 = new testmarkingmenu.PiePart();
+        piePart1 = new markingmenu.PiePart();
+        piePart2 = new markingmenu.PiePart();
+        piePart3 = new markingmenu.PiePart();
+        piePart4 = new markingmenu.PiePart();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setBounds(new java.awt.Rectangle(200, 200, 500, 500));
@@ -141,9 +141,9 @@ public class FrameTest extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private testmarkingmenu.PiePart piePart1;
-    private testmarkingmenu.PiePart piePart2;
-    private testmarkingmenu.PiePart piePart3;
-    private testmarkingmenu.PiePart piePart4;
+    private markingmenu.PiePart piePart1;
+    private markingmenu.PiePart piePart2;
+    private markingmenu.PiePart piePart3;
+    private markingmenu.PiePart piePart4;
     // End of variables declaration//GEN-END:variables
 }
