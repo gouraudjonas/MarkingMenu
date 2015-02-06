@@ -24,8 +24,8 @@ import javax.swing.JComponent;
  *
  * @author Jonas Gouraud
  */
-public class PiePart extends JComponent implements MouseListener {
-
+public class PiePart extends JComponent implements MouseListener {        
+            
     private Point centerPoint;
     private float startAngle;
     private float extendAngle;
@@ -34,6 +34,7 @@ public class PiePart extends JComponent implements MouseListener {
     private String text;
     private Color color;
     private Area area;
+    private Callable action;
 
     private final PropertyChangeSupport support = new PropertyChangeSupport(this);
 
@@ -44,7 +45,13 @@ public class PiePart extends JComponent implements MouseListener {
      * Obligatory empty constructor
      */
     public PiePart() {
-        this("text");
+        this("text", new Callable() {
+
+            @Override
+            public void execute() {
+                System.out.println("Action executed is: text");
+            }
+        });
     }
 
     /**
@@ -52,8 +59,8 @@ public class PiePart extends JComponent implements MouseListener {
      *
      * @param text
      */
-    public PiePart(String text) {
-        this(new Point(0, 0), 0, 90, 10, 100, text);
+    public PiePart(String text, Callable func) {
+        this(new Point(0, 0), 0, 90, 10, 100, text, func);
     }
 
     /**
@@ -67,8 +74,8 @@ public class PiePart extends JComponent implements MouseListener {
      * @param endRadius
      */
     public PiePart(Point p, float startAngle, float extendAngle,
-            float startRadius, float endRadius, String text) {
-        this(p, startAngle, extendAngle, startRadius, endRadius, text, Color.GREEN, Color.RED);
+            float startRadius, float endRadius, String text, Callable func) {
+        this(p, startAngle, extendAngle, startRadius, endRadius, text, new Color(0x04819E),new Color(0xFF7F00), func);
     }
 
     /**
@@ -84,7 +91,7 @@ public class PiePart extends JComponent implements MouseListener {
      * @param colorHighlight
      */
     public PiePart(Point p, float startAngle, float extendAngle, float startRadius,
-            float endRadius, String text, Color color, Color colorHighlight) {
+            float endRadius, String text, Color color, Color colorHighlight, Callable func) {
         setCenterPoint(p);
         setStartAngle(startAngle);
         setExtendAngle(extendAngle);
@@ -93,6 +100,7 @@ public class PiePart extends JComponent implements MouseListener {
         setText(text);
         setOriginalColor(color);
         setOriginalHighlightColor(colorHighlight);
+        setAction(func);
 
         setColor(this.getOriginalColor());
         addMouseListener(this);
@@ -156,8 +164,8 @@ public class PiePart extends JComponent implements MouseListener {
      */
     public void updatePosition(int centerPointX, int centerPointY) {
         // Update of centerPoint and the area
-        this.setCenterPoint(new Point(centerPointX - 8 - (int) this.getEndRadius(),
-                centerPointY - 30 - (int) this.getEndRadius()));
+        this.setCenterPoint(new Point(centerPointX - (int) this.getEndRadius(),
+                centerPointY - (int) this.getEndRadius()));
         area = createArea();
     }
 
@@ -270,6 +278,10 @@ public class PiePart extends JComponent implements MouseListener {
 
     public void setArea(Area area) {
         this.area = area;
+    }    
+    
+    private void setAction(Callable func) {
+        this.action = func;
     }
 
     /**
@@ -285,6 +297,7 @@ public class PiePart extends JComponent implements MouseListener {
 
     @Override
     public void mouseReleased(MouseEvent e) {
+        this.action.execute();
     }
 
     @Override
