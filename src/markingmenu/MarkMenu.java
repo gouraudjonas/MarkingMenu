@@ -183,8 +183,14 @@ public class MarkMenu extends JPanel {
                     // Impossible
                     break;
                 case MENU:
-                    // PiePart should be highlighted
-                    setState(MarkMenuState.MENU);
+                    Point pointer = e.getLocationOnScreen();
+                    System.out.println("Checking... x:"+pointer.x+", y:"+pointer.y);
+                    for (PiePart p : myPieParts) {
+                        if (p.contains(pointer)) {
+                            System.out.println("Should highlight: "+p.getText());
+                        }
+                    }
+                    //setState(MarkMenuState.MENU);
                     break;
                 case VISIBLE:
                     // Impossible
