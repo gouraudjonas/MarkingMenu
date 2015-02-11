@@ -18,15 +18,18 @@ import java.awt.geom.Arc2D;
 import java.awt.geom.Area;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.util.Random;
+import java.util.Vector;
 import javax.swing.JComponent;
+import javax.vecmath.Vector2d;
 
 /**
  * PiePart which can be used to create a marking menu
  *
  * @author Jonas Gouraud
  */
-public class PiePart extends JComponent implements MouseListener {
-
+public class PiePart extends JComponent {
+    
     private Point centerPoint;
     private float startAngle;
     private float extendAngle;
@@ -104,7 +107,7 @@ public class PiePart extends JComponent implements MouseListener {
         setAction(func);
 
         setColor(this.getOriginalColor());
-        addMouseListener(this);
+        //addMouseListener(this);
         area = createArea();
     }
 
@@ -136,27 +139,29 @@ public class PiePart extends JComponent implements MouseListener {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
 
-        Font oldFont = g2d.getFont();
-        Color oldColor = g2d.getColor();
+        if (this.isVisible()) {
+            Font oldFont = g2d.getFont();
+            Color oldColor = g2d.getColor();
 
-        // Paint the whole arc
-        g2d.setColor(this.getColor());
-        g2d.fill(getArea());
-        g2d.setColor(Color.BLACK);
-        g2d.draw(getArea());
+            // Paint the whole arc
+            g2d.setColor(this.getColor());
+            g2d.fill(getArea());
+            g2d.setColor(Color.BLACK);
+            g2d.draw(getArea());
 
-        // Paint the text
-        g2d.setColor(Color.BLACK);
-        g2d.setFont(new Font("TimesRoman", Font.PLAIN, 20));
-        int xString = (int) (centerPoint.x + endRadius +
-                Math.cos(degreeToRadian(startAngle + extendAngle / 2)) * endRadius / 2);
-        int yString = (int) (centerPoint.y + endRadius -
-                Math.sin(degreeToRadian(startAngle + extendAngle / 2)) * endRadius / 2);
-        g2d.drawString(this.getText(), xString, yString);
+            // Paint the text
+            g2d.setColor(Color.BLACK);
+            g2d.setFont(new Font("TimesRoman", Font.PLAIN, 20));
+            int xString = (int) (centerPoint.x + endRadius +
+                    Math.cos(degreeToRadian(startAngle + extendAngle / 2)) * endRadius / 2);
+            int yString = (int) (centerPoint.y + endRadius -
+                    Math.sin(degreeToRadian(startAngle + extendAngle / 2)) * endRadius / 2);
+            g2d.drawString(this.getText(), xString, yString);
 
-        // Get back to the old color
-        g2d.setColor(oldColor);
-        g2d.setFont(oldFont);
+            // Get back to the old color
+            g2d.setColor(oldColor);
+            g2d.setFont(oldFont);
+        }
     }
 
     private double degreeToRadian(double degree) {
@@ -164,8 +169,9 @@ public class PiePart extends JComponent implements MouseListener {
     }
 
     @Override
-    public boolean contains(Point p) {
-        return getArea().contains(p);
+    public boolean contains(Point p) { // TODO
+        //return getArea().contains(p);
+        return true;
     }
 
     @Override
@@ -301,32 +307,24 @@ public class PiePart extends JComponent implements MouseListener {
     private void setAction(Callable func) {
         this.action = func;
     }
-
-    /**
-     * *************** MOUSE LISTENING **********************
-     */
-    @Override
-    public void mouseClicked(MouseEvent e) {
+    
+    public Callable getAction() {
+        return this.action;
     }
 
-    @Override
-    public void mousePressed(MouseEvent e) {
+    public boolean isContained(double degree, double distance) {
+        
+        if (degree > startAngle && degree < (startAngle + extendAngle)) {            
+            if (distance > startRadius && distance < endRadius) return true;
+        }
+        return false;
     }
 
-    @Override
-    public void mouseReleased(MouseEvent e) {
-        this.action.execute();
+    void highlight() {
+        setColor(getOriginalHighlightColor());
     }
 
-    @Override
-    public void mouseEntered(MouseEvent e) {
-        setColor(this.getOriginalHighlightColor());
-        repaint();
-    }
-
-    @Override
-    public void mouseExited(MouseEvent e) {
-        setColor(this.getOriginalColor());
-        repaint();
+    void resetColor() {
+        setColor(getOriginalColor());
     }
 }

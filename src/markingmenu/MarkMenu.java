@@ -38,13 +38,14 @@ public class MarkMenu extends JPanel {
     public static final String ACT_HIDE_MENU = "hiding menu";
     public static final String ACT_WAIT_MARK = "waiting mark";   
     
-    private static final long DELAY = 1000;
+    private static final long DELAY = 100;
     
     private MarkMenuState state;
     private List<PiePart> myPieParts;
     private Point menuCenter = new Point(0, 0);
     private boolean isMenuVisible = false;    
     private Timer timer;
+    private PiePart piePartPicked;    
     
     public MarkMenu() {
         myPieParts = new ArrayList<PiePart>();
@@ -65,12 +66,18 @@ public class MarkMenu extends JPanel {
         }
     }
     
-    private void displayMenu(Point pointer) {
+    private void centerMenu(Point pointer) {
+        this.menuCenter = pointer;
+        for (PiePart p: myPieParts) {
+            p.updatePosition(pointer.x, pointer.y);
+        }
+    }
+    
+    private void displayMenu() {
         if (myPieParts.size() < 1) return;
         this.setLayout(new javax.swing.OverlayLayout(this));
         int i = 0;
         for (PiePart p: myPieParts) {
-            p.updatePosition(pointer.x, pointer.y);
             this.add(p);
             i++;
         }
@@ -78,13 +85,14 @@ public class MarkMenu extends JPanel {
         repaint();
     }
     private void hideMenu() {
-        isMenuVisible = false;
+        for (PiePart p : myPieParts) p.resetColor();
+        isMenuVisible = false;        
         repaint();
     }
            
     private void setState(MarkMenuState markMenuState) {
         this.state = markMenuState;
-        System.out.println("State is now: "+markMenuState);
+        //System.out.println("State is now: "+markMenuState);
     }
     private MarkMenuState getState() {
         return this.state;
@@ -108,11 +116,10 @@ public class MarkMenu extends JPanel {
     
     protected void paintComponent(Graphics g) { 
         for (PiePart p : myPieParts) {
+            p.setVisible(isMenuVisible);            
             p.paint(g);
-            p.setVisible(isMenuVisible);
         }
-    }
-        
+    }       
     
     /**
      * Mouse adapter for the marking menu
@@ -131,8 +138,8 @@ public class MarkMenu extends JPanel {
                     case MARKING:
                         // Impossible
                         break;
-                    case MENU:
-                        // PiePart should execute command if mouse hover
+                    case MENU:              
+                        if (piePartUnderPointer(e.getPoint())) piePartPicked.getAction().execute();
                         hideMenu();
                         setState(MarkMenuState.IDLE);
                         break;
@@ -149,12 +156,12 @@ public class MarkMenu extends JPanel {
         
         @Override
         public void mousePressed(MouseEvent e) {
-            System.out.println("Pressed");
             if (SwingUtilities.isRightMouseButton(e)) {
                 switch(getState()) {
                     case IDLE:
                         timer = new Timer();
-                        timer.schedule(new MarkingMenuTimer(e.getPoint()), DELAY);
+                        timer.schedule(new MarkingMenuTimer(), DELAY);
+                        centerMenu(e.getPoint());
                         setState(MarkMenuState.MARKING);
                         break;
                     case MARKING:
@@ -183,14 +190,8 @@ public class MarkMenu extends JPanel {
                     // Impossible
                     break;
                 case MENU:
-                    Point pointer = e.getLocationOnScreen();
-                    System.out.println("Checking... x:"+pointer.x+", y:"+pointer.y);
-                    for (PiePart p : myPieParts) {
-                        if (p.contains(pointer)) {
-                            System.out.println("Should highlight: "+p.getText());
-                        }
-                    }
-                    //setState(MarkMenuState.MENU);
+                    highlight(e.getPoint());
+                    setState(MarkMenuState.MENU);
                     break;
                 case VISIBLE:
                     // Impossible
@@ -204,7 +205,6 @@ public class MarkMenu extends JPanel {
 
         @Override
         public void mouseReleased(MouseEvent e) {
-            System.out.println("Released");
             if (SwingUtilities.isRightMouseButton(e)) {
                 switch(getState()) {
                     case IDLE:
@@ -212,7 +212,7 @@ public class MarkMenu extends JPanel {
                         break;
                     case MARKING:
                         timer.cancel();
-                        displayMenu(e.getPoint());
+                        displayMenu();
                         // Execute item if one selected
                         setState(MarkMenuState.MENU);
                         break;
@@ -220,12 +220,12 @@ public class MarkMenu extends JPanel {
                         // Impossible
                         break;
                     case VISIBLE:
+                        if (piePartUnderPointer(e.getPoint())) piePartPicked.getAction().execute();
                         hideMenu();
-                        // A PiePart should be executing an action
                         setState(MarkMenuState.IDLE);
                         break;
                     case INVISIBLE:
-                        // A PiePart should be executing an action
+                        if (piePartUnderPointer(e.getPoint())) piePartPicked.getAction().execute();
                         setState(MarkMenuState.IDLE);
                         break;
                     default:
@@ -248,16 +248,39 @@ public class MarkMenu extends JPanel {
                         // Impossible
                         break;
                     case VISIBLE:
-                        // A PiePart should be highlighted if hover
+                        highlight(e.getPoint());
                         setState(MarkMenuState.VISIBLE);
                         break;
                     case INVISIBLE:
-                        // A PiePart should be registering the selection
+                        // Nothing to do
                         setState(MarkMenuState.INVISIBLE);
                         break;
                     default:
                 }
             }
+        }
+
+        private boolean piePartUnderPointer(Point pt) {
+            double degree = calcRotationAngleInDegrees(pt, menuCenter);
+            double distance = Math.sqrt((pt.x-menuCenter.x)*(pt.x-menuCenter.x) + (pt.y-menuCenter.y)*(pt.y-menuCenter.y));
+            for (PiePart p : myPieParts) {
+                if (p.isContained(degree, distance)) {
+                    piePartPicked = p;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void highlight(Point pt) {
+            double degree = calcRotationAngleInDegrees(pt, menuCenter);
+            double distance = Math.sqrt((pt.x-menuCenter.x)*(pt.x-menuCenter.x) + (pt.y-menuCenter.y)*(pt.y-menuCenter.y));
+            for (PiePart p : myPieParts) {
+                if (p.isContained(degree, distance)) {
+                    p.highlight();
+                } else p.resetColor();
+            }
+            repaint();
         }
     }
     /** 
@@ -271,14 +294,13 @@ public class MarkMenu extends JPanel {
         }
         @Override
         public void run() {
-            System.out.println("time out");
+            //System.out.println("time out");
             switch(getState()) {
                 case IDLE:
                     // Forbidden
                     break;
                 case MARKING:
-                     // should fire visibility
-                    displayMenu(initialPointer);
+                    displayMenu();
                     setState(MarkMenuState.VISIBLE);
                     break;
                 case MENU:
@@ -300,33 +322,69 @@ public class MarkMenu extends JPanel {
      */
     private enum MarkMenuState {
 
-        IDLE(false),
-        MARKING(false),
-        MENU(true),
-        VISIBLE(true),
-        INVISIBLE(false);
-        
-        public final boolean isMenuVisible;
-
-        private MarkMenuState(boolean isMenuVisible) {
-            this.isMenuVisible = isMenuVisible;
-        }
+        IDLE,
+        MARKING,
+        MENU,
+        VISIBLE,
+        INVISIBLE;        
     }      
     
     // TODO use package test when stable
     public static void main(String s[]) {
         MarkMenu mm = new MarkMenu();
-        mm.addItem("One");
-        mm.addItem("Two");
-        mm.addItem("Three");
-        mm.addItem("Four");
-        mm.addItem("Five");
-        mm.addItem("Six");
-        mm.addItem("Seven");
+        mm.addItem("UpRight");
+        mm.addItem("UpLeft");
+        mm.addItem("DownLeft");
+        mm.addItem("DownRight");
         JFrame frame = new JFrame("MarkMenu Testing");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setContentPane(mm);
         frame.setSize(300, 300);
         frame.setVisible(true);
     }
+    
+    /**
+    * Calculates the angle from centerPt to targetPt in degrees.
+    * The return should range from [0,360), rotating CLOCKWISE, 
+    * 0 and 360 degrees represents NORTH,
+    * 90 degrees represents EAST, etc...
+    *
+    * Assumes all points are in the same coordinate space.  If they are not, 
+    * you will need to call SwingUtilities.convertPointToScreen or equivalent 
+    * on all arguments before passing them  to this function.
+    *
+    * @param centerPt   Point we are rotating around.
+    * @param targetPt   Point we want to calcuate the angle to.  
+    * @return angle in degrees.  This is the angle from centerPt to targetPt.
+    */
+   public static double calcRotationAngleInDegrees(Point centerPt, Point targetPt)
+   {
+       // calculate the angle theta from the deltaY and deltaX values
+       // (atan2 returns radians values from [-PI,PI])
+       // 0 currently points EAST.  
+       // NOTE: By preserving Y and X param order to atan2,  we are expecting 
+       // a CLOCKWISE angle direction.  
+       double theta = Math.atan2(targetPt.y - centerPt.y, targetPt.x - centerPt.x);
+
+       // rotate the theta angle clockwise by 90 degrees 
+       // (this makes 0 point NORTH)
+       // NOTE: adding to an angle rotates it clockwise.  
+       // subtracting would rotate it counter-clockwise
+       theta += Math.PI/2.0;
+
+       // convert from radians to degrees
+       // this will give you an angle from [0->270],[-180,0]
+       double angle = Math.toDegrees(theta);
+       // Turn 90° degrees clockwise
+       angle += 90;
+       // convert to positive range [0-360)
+       // since we want to prevent negative angles, adjust them now.
+       // we can assume that atan2 will not return a negative value
+       // greater than one partial rotation
+       if (angle < 0) {
+           angle += 360;
+       }
+
+       return 360 - angle; // Reverse direction
+   }
 }
