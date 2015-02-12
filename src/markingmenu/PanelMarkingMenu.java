@@ -5,15 +5,12 @@
  */
 package markingmenu;
 
-import java.awt.Dimension;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JComponent;
 
-import javax.swing.JFrame;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -31,22 +28,18 @@ public class PanelMarkingMenu extends JPanel {
     public boolean showed;
     public static int MENU_ITEMS = 4;
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) {
-        JFrame frame = new JFrame("Marking menu of the death");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setContentPane(new PanelMarkingMenu());
-        frame.setSize(300, 300);
+    /*public static void main(String[] args) {
+     JFrame frame = new JFrame("Marking menu of the death");
+     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+     frame.setContentPane(new PanelMarkingMenu());
+     frame.setSize(300, 300);
 
-        // java - get screen size using the Toolkit class
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        frame.setLocation((int) screenSize.getWidth() / 2,
-                (int) screenSize.getHeight() / 2);
-        frame.setVisible(true);
-    }
-
+     // java - get screen size using the Toolkit class
+     Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+     frame.setLocation((int) screenSize.getWidth() / 2,
+     (int) screenSize.getHeight() / 2);
+     frame.setVisible(true);
+     }*/
     public PanelMarkingMenu() {
         // Variables initializing
         popup = new JPopupMenu();

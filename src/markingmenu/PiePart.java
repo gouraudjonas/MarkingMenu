@@ -5,23 +5,17 @@
  */
 package markingmenu;
 
-import markingmenu.*;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Area;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
-import java.util.Random;
-import java.util.Vector;
 import javax.swing.JComponent;
-import javax.vecmath.Vector2d;
 
 /**
  * PiePart which can be used to create a marking menu
