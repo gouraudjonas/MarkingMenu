@@ -31,29 +31,31 @@ import java.beans.PropertyChangeSupport;
 import javax.swing.JComponent;
 
 /**
- * PiePart which can be used to create a marking menu
+ * PiePart (ou tuile) : un JComponent utilisé par le MarkMenu
  *
- * @author Jonas Gouraud
+ * @author AdrienSIEGFRIED
+ * @author JonasGOURAUD
  */
 public class PiePart extends JComponent {
     
-    private Point centerPoint;
-    private float startAngle;
-    private float extendAngle;
-    private float startRadius;
-    private float endRadius;
-    private String text;
-    private Color color;
-    private Area area;
-    private Callable action;
+    private Point centerPoint;      // Le centre de la tuile
+    private float startAngle;       // L'angle de début de la tuile
+    private float extendAngle;      // L'angle total de la tuile
+    private float startRadius;      // Le début du rayon de la tuile
+    private float endRadius;        // La fin du rayon de la tuile
+    private String text;            // Le texte affiché par la tuile
+    private Color color;            // La couleur actuelle de la tuile 
+    private Area area;              // L'aire de la tuile
+    private Callable action;        // L'action associée à la tuile
 
     private final PropertyChangeSupport support = new PropertyChangeSupport(this);
 
-    private Color originalColor;
-    private Color originalHighlightColor;
+    private Color originalColor;            // Couleur donnée à l'originie
+    private Color originalHighlightColor;   // Couleur donnée pour un survol
+
 
     /**
-     * Obligatory empty constructor
+     * Création d'une tuile avec par défaut "text" et l'action d'un Sysout
      */
     public PiePart() {
         this("text", new Callable() {
@@ -66,23 +68,23 @@ public class PiePart extends JComponent {
     }
 
     /**
-     * Constructor to create a minimal biscuit (just text)
-     *
-     * @param text
+     * Construction d'une tuile avec un centre de (0, 0), avec 90° commençant à 0° avec un rayon de 10 à 100
+     * @param text      Le texte à affiché
+     * @param func      L'action à exécuter
      */
     public PiePart(String text, Callable func) {
         this(new Point(0, 0), 0, 90, 10, 100, text, func);
     }
 
     /**
-     * Constructor with general information
-     *
+     * Construction d'une tuile avec la couleur bleu en normal et orange au survol
      * @param p
-     * @param text
      * @param startAngle
      * @param extendAngle
      * @param startRadius
      * @param endRadius
+     * @param text
+     * @param func 
      */
     public PiePart(Point p, float startAngle, float extendAngle,
             float startRadius, float endRadius, String text, Callable func) {
@@ -90,16 +92,16 @@ public class PiePart extends JComponent {
     }
 
     /**
-     * Complete constructor
-     *
-     * @param p centerPoint
-     * @param startAngle
-     * @param extendAngle
-     * @param startRadius
-     * @param endRadius
-     * @param text
-     * @param color
-     * @param colorHighlight
+     * 
+     * @param p                 Convergence de la tuile vers ce point
+     * @param startAngle        L'angle de départ
+     * @param extendAngle       L'angle totale
+     * @param startRadius       Le début du rayon
+     * @param endRadius         La fin du rayon
+     * @param text              Le texte à affiché
+     * @param color             La couleur par défaut
+     * @param colorHighlight    La couleur au survol
+     * @param func              La fonction à exécuter
      */
     public PiePart(Point p, float startAngle, float extendAngle, float startRadius,
             float endRadius, String text, Color color, Color colorHighlight, Callable func) {
@@ -114,15 +116,14 @@ public class PiePart extends JComponent {
         setAction(func);
 
         setColor(this.getOriginalColor());
-        //addMouseListener(this);
         area = createArea();
     }
 
     /**
-     * Create the area according to PiePart caracteristics : a big arc, then
-     * substracting a small arc around center
+     * Création de la zone correspondant aux caractéristiques de la tuile.
+     * On crée une grande arc et on y soustrait la plus petite (centre)
      *
-     * @return area
+     * @return area     La zone à déssiner
      */
     private Area createArea() {
         Area startingArea = new Area();
@@ -141,6 +142,11 @@ public class PiePart extends JComponent {
         return startingArea;
     }
 
+    /**
+     * Fonction de dessin
+     * 
+     * @param g 
+     */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -171,24 +177,18 @@ public class PiePart extends JComponent {
         }
     }
 
+    /**
+     * Convertisseur de degrés en radian
+     * 
+     * @param degree
+     * @return 
+     */
     private double degreeToRadian(double degree) {
         return degree * 2 * Math.PI / 360;
-    }
-
-    @Override
-    public boolean contains(Point p) { // TODO
-        //return getArea().contains(p);
-        return true;
-    }
-
-    @Override
-    public boolean contains(int x, int y) {
-        return getArea().contains(new Point(x, y));
-    }
+    }    
 
     /**
-     * Used before showing this PiePart, to update it with the current mouse
-     * position
+     * Mise à jour des positions relatives à la souris
      *
      * @param centerPointX
      * @param centerPointY
@@ -198,6 +198,25 @@ public class PiePart extends JComponent {
         this.setCenterPoint(new Point(centerPointX - (int) this.getEndRadius(),
                 centerPointY - (int) this.getEndRadius()));
         area = createArea();
+    }
+    public boolean isContained(double degree, double distance) {
+        
+        if (degree > startAngle && degree < (startAngle + extendAngle)) {            
+            if (distance > startRadius && distance < endRadius) return true;
+        }
+        return false;
+    }
+    /**
+     * Mise en surbrillance de la tuile au survol
+     */
+    void highlight() {
+        setColor(getOriginalHighlightColor());
+    }
+    /**
+     * Remettre la couleur d'origine sur la tuile
+     */
+    void resetColor() {
+        setColor(getOriginalColor());
     }
 
     /**
@@ -317,21 +336,5 @@ public class PiePart extends JComponent {
     
     public Callable getAction() {
         return this.action;
-    }
-
-    public boolean isContained(double degree, double distance) {
-        
-        if (degree > startAngle && degree < (startAngle + extendAngle)) {            
-            if (distance > startRadius && distance < endRadius) return true;
-        }
-        return false;
-    }
-
-    void highlight() {
-        setColor(getOriginalHighlightColor());
-    }
-
-    void resetColor() {
-        setColor(getOriginalColor());
     }
 }
